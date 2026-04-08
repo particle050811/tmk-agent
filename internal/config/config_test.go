@@ -13,6 +13,7 @@ func TestLoad(t *testing.T) {
 	t.Setenv("TMK_SAMPLE_RATE", "24000")
 	t.Setenv("TMK_CHANNELS", "2")
 	t.Setenv("TMK_CHUNK_MILLIS", "100")
+	t.Setenv("TMK_AUDIO_DEVICE", "Realtek")
 	t.Setenv("TMK_DEBUG", "true")
 	t.Setenv("TMK_DEBUG_AUDIO_DIR", "/tmp/tmk-audio")
 	t.Setenv("TMK_DEBUG_AUDIO_SECONDS", "8")
@@ -39,6 +40,9 @@ func TestLoad(t *testing.T) {
 	}
 	if cfg.ChunkMillis != 100 {
 		t.Fatalf("ChunkMillis = %d", cfg.ChunkMillis)
+	}
+	if cfg.AudioDevice != "Realtek" {
+		t.Fatalf("AudioDevice = %q", cfg.AudioDevice)
 	}
 	if !cfg.Debug {
 		t.Fatal("Debug = false, want true")

@@ -28,6 +28,7 @@ type Config struct {
 	Channels          uint32
 	ChunkMillis       int
 	AudioBufferFrames int
+	AudioDevice       string
 	Debug             bool
 	DebugAudioDir     string
 	DebugAudioSeconds int
@@ -55,6 +56,7 @@ func Load() (Config, error) {
 		Channels:          getEnvUint32("TMK_CHANNELS", defaultChannels),
 		ChunkMillis:       getEnvInt("TMK_CHUNK_MILLIS", defaultChunkMillis),
 		AudioBufferFrames: getEnvInt("TMK_AUDIO_BUFFER_FRAMES", defaultAudioBufferFrames),
+		AudioDevice:       strings.TrimSpace(os.Getenv("TMK_AUDIO_DEVICE")),
 		Debug:             getEnvBool("TMK_DEBUG", false),
 		DebugAudioDir:     strings.TrimSpace(os.Getenv("TMK_DEBUG_AUDIO_DIR")),
 		DebugAudioSeconds: getEnvInt("TMK_DEBUG_AUDIO_SECONDS", 15),

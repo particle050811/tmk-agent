@@ -7,23 +7,26 @@ import (
 )
 
 type Terminal struct {
-	out io.Writer
-	mu  sync.Mutex
+	out   io.Writer
+	debug bool
+	mu    sync.Mutex
 }
 
-func NewTerminal(out io.Writer) *Terminal {
-	return &Terminal{out: out}
+func NewTerminal(out io.Writer, debug bool) *Terminal {
+	return &Terminal{out: out, debug: debug}
 }
 
 func (t *Terminal) PrintStatus(status string) {
+	if !t.debug {
+		return
+	}
 	t.printf("[status] %s\n", status)
 }
 
-func (t *Terminal) PrintSource(text string) {
-	t.printf("[source] %s\n", text)
-}
-
 func (t *Terminal) PrintTargetDelta(text string) {
+	if !t.debug {
+		return
+	}
 	t.printf("[target.partial] %s\n", text)
 }
 

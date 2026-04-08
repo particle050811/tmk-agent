@@ -13,8 +13,6 @@ import (
 	"tmk-agent/internal/config"
 )
 
-const transcriptionModel = "gummy-realtime-v1"
-
 type Client struct {
 	conn *websocket.Conn
 
@@ -63,9 +61,6 @@ func (c *Client) SendSessionUpdate(ctx context.Context, cfg config.RealtimeConfi
 		Session: SessionPayload{
 			Modalities:       []string{"text"},
 			InputAudioFormat: "pcm",
-			InputAudioTranscription: &InputAudioTranscription{
-				Model: transcriptionModel,
-			},
 			TurnDetection: &TurnDetection{
 				Type:            "server_vad",
 				Threshold:       0.5,
@@ -162,17 +157,6 @@ func parseEvent(data []byte) (Event, error) {
 	}
 
 	switch event.Type {
-	case "conversation.item.input_audio_transcription.completed":
-		var payload struct {
-			ItemID         string `json:"item_id"`
-			Transcript     string `json:"transcript"`
-			ConversationID string `json:"conversation_id"`
-		}
-		if err := json.Unmarshal(data, &payload); err != nil {
-			return Event{}, err
-		}
-		event.ID = payload.ItemID
-		event.Text = payload.Transcript
 	case "response.text.delta":
 		var payload struct {
 			ResponseID string `json:"response_id"`

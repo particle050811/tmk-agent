@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"tmk-agent/internal/audio"
@@ -58,10 +59,10 @@ func runStream(args []string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	renderer := render.NewTerminal(os.Stdout)
+	renderer := render.NewTerminal(os.Stdout, cfg.Debug)
 	audioIn := make(chan []byte, cfg.AudioBufferFrames)
 
-	mic, err := audio.StartMicrophone(ctx, cfg.SampleRate, cfg.Channels, audioIn)
+	mic, err := audio.StartMicrophone(ctx, cfg.SampleRate, cfg.Channels, cfg.AudioDevice, audioIn)
 	if err != nil {
 		return err
 	}
@@ -73,6 +74,14 @@ func runStream(args []string) error {
 		*targetLang,
 		cfg.Model,
 	))
+	renderer.PrintStatus(fmt.Sprintf(
+		"capture device: %s (default=%t)",
+		mic.SelectedDeviceName(),
+		mic.SelectedIsDefault(),
+	))
+	if cfg.Debug {
+		renderer.PrintStatus("available capture devices: " + strings.Join(mic.AvailableDevices(), ", "))
+	}
 
 	return streaming.Run(ctx, streaming.RunConfig{
 		Realtime:          cfg.RealtimeConfig(*sourceLang, *targetLang),

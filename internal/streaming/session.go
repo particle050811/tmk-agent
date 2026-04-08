@@ -2,6 +2,7 @@ package streaming
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"time"
@@ -12,7 +13,6 @@ import (
 
 type Renderer interface {
 	PrintStatus(status string)
-	PrintSource(text string)
 	PrintTargetDelta(text string)
 	PrintTargetFinal(text string)
 	PrintError(err error)
@@ -84,6 +84,8 @@ func runConnected(ctx context.Context, cfg RunConfig) error {
 	chunker := NewChunker(cfg.SampleRate, cfg.Channels, cfg.ChunkMillis)
 	lastEventAt := time.Now()
 	receivedPCM := false
+	silentCallbacks := 0
+	silentWarningShown := false
 	sentChunks := 0
 	idleTicker := time.NewTicker(5 * time.Second)
 	defer idleTicker.Stop()
@@ -123,6 +125,15 @@ func runConnected(ctx context.Context, cfg RunConfig) error {
 				receivedPCM = true
 				cfg.Renderer.PrintStatus(fmt.Sprintf("microphone PCM received: %d bytes per callback", len(pcm)))
 			}
+			if pcmPeak16(pcm) == 0 {
+				silentCallbacks++
+				if cfg.Debug && !silentWarningShown && silentCallbacks >= 20 {
+					silentWarningShown = true
+					cfg.Renderer.PrintStatus("microphone callback is active but PCM is all zeros; check OS microphone privacy, input mute, or set TMK_AUDIO_DEVICE to another capture device")
+				}
+			} else {
+				silentCallbacks = 0
+			}
 			for _, chunk := range chunker.Push(pcm) {
 				if err := client.AppendAudio(ctx, chunk); err != nil {
 					return fmt.Errorf("append audio: %w", err)
@@ -147,12 +158,22 @@ func runConnected(ctx context.Context, cfg RunConfig) error {
 	}
 }
 
+func pcmPeak16(pcm []byte) int {
+	peak := 0
+	for i := 0; i+1 < len(pcm); i += 2 {
+		v := int(int16(binary.LittleEndian.Uint16(pcm[i:])))
+		if v < 0 {
+			v = -v
+		}
+		if v > peak {
+			peak = v
+		}
+	}
+	return peak
+}
+
 func handleEvent(renderer Renderer, event realtime.Event) {
 	switch event.Type {
-	case "conversation.item.input_audio_transcription.completed":
-		if event.Text != "" {
-			renderer.PrintSource(event.Text)
-		}
 	case "response.text.delta":
 		if event.Delta != "" {
 			renderer.PrintTargetDelta(event.Delta)

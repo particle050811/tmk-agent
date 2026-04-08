@@ -9,11 +9,6 @@ func TestParseEvent(t *testing.T) {
 		want Event
 	}{
 		{
-			name: "transcription completed",
-			in:   `{"type":"conversation.item.input_audio_transcription.completed","item_id":"item-1","transcript":"你好"}`,
-			want: Event{Type: "conversation.item.input_audio_transcription.completed", ID: "item-1", Text: "你好"},
-		},
-		{
 			name: "response delta",
 			in:   `{"type":"response.text.delta","response_id":"resp-1","delta":"hello"}`,
 			want: Event{Type: "response.text.delta", ResponseID: "resp-1", Delta: "hello"},
