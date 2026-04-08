@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OUT_FILE="${1:-$ROOT_DIR/test/test.txt}"
+OUT_FILE="${1:-$ROOT_DIR/test/test.srt}"
 
 cd "$ROOT_DIR"
 

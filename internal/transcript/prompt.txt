@@ -1,4 +1,8 @@
-Translate the spoken content from {{source_lang}} into {{target_lang}}.
-Return plain text only using exactly this format:
-Translation:
-<target text>
+Transcribe the spoken content from {{source_lang}} and translate it into {{target_lang}}.
+Return only valid SubRip subtitle content (.srt).
+Rules:
+1. Output plain text only. Do not use Markdown code fences.
+2. Use sequential cue numbers starting from 1.
+3. Use timestamps in HH:MM:SS,mmm --> HH:MM:SS,mmm format.
+4. Each subtitle cue must contain translated text in {{target_lang}} only.
+5. Do not add headings, notes, or explanations before or after the subtitle content.

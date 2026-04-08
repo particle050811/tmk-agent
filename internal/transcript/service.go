@@ -10,30 +10,42 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"tmk-agent/internal/config"
 )
 
-const transcriptModel = "qwen3-omni-flash"
-
 //go:embed prompt.txt
 var transcriptPromptTemplate string
+
+var srtTimestampPattern = regexp.MustCompile(`^\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3}$`)
 
 type Service struct {
 	baseURL string
 	apiKey  string
+	model   string
 	client  *http.Client
 }
 
 type Result struct {
-	Translation string
+	Subtitles string
+}
+
+type apiErrorResponse struct {
+	Error struct {
+		Message string `json:"message"`
+		Type    string `json:"type"`
+		Code    string `json:"code"`
+	} `json:"error"`
 }
 
 func New(cfg config.Config) *Service {
 	return &Service{
 		baseURL: compatibleBaseURL(cfg.BaseURL),
 		apiKey:  cfg.APIKey,
+		model:   cfg.TranscriptModel,
 		client:  &http.Client{},
 	}
 }
@@ -50,7 +62,7 @@ func (s *Service) TranscribeFile(path string, sourceLang string, targetLang stri
 	}
 
 	payload := map[string]any{
-		"model": transcriptModel,
+		"model": s.model,
 		"messages": []map[string]any{
 			{
 				"role": "user",
@@ -95,7 +107,7 @@ func (s *Service) TranscribeFile(path string, sourceLang string, targetLang stri
 		return Result{}, fmt.Errorf("read response: %w", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return Result{}, fmt.Errorf("transcript request failed: status=%s body=%s", resp.Status, strings.TrimSpace(string(respBody)))
+		return Result{}, buildAPIError(resp.Status, respBody, s.model)
 	}
 
 	var decoded struct {
@@ -117,16 +129,28 @@ func (s *Service) TranscribeFile(path string, sourceLang string, targetLang stri
 		return Result{}, fmt.Errorf("decode response: empty transcript")
 	}
 
-	translation := parseTranslation(content)
-	if translation == "" {
-		return Result{
-			Translation: content,
-		}, nil
+	subtitles, err := parseSRT(content)
+	if err != nil {
+		return Result{}, fmt.Errorf("decode response: invalid srt content: %w", err)
 	}
 
 	return Result{
-		Translation: translation,
+		Subtitles: subtitles,
 	}, nil
+}
+
+func buildAPIError(status string, respBody []byte, model string) error {
+	rawBody := strings.TrimSpace(string(respBody))
+
+	var apiErr apiErrorResponse
+	if err := json.Unmarshal(respBody, &apiErr); err == nil && apiErr.Error.Code != "" {
+		if apiErr.Error.Code == "access_denied" || apiErr.Error.Type == "access_denied" {
+			return fmt.Errorf("transcript request failed: status=%s model=%s code=%s message=%s; current DashScope account likely does not have access to this model, try another enabled Omni model via QWEN_TRANSCRIPT_MODEL", status, model, apiErr.Error.Code, apiErr.Error.Message)
+		}
+		return fmt.Errorf("transcript request failed: status=%s model=%s code=%s message=%s", status, model, apiErr.Error.Code, apiErr.Error.Message)
+	}
+
+	return fmt.Errorf("transcript request failed: status=%s model=%s body=%s", status, model, rawBody)
 }
 
 func compatibleBaseURL(realtimeBaseURL string) string {
@@ -152,23 +176,74 @@ func buildPrompt(sourceLang string, targetLang string) string {
 	return prompt
 }
 
-func parseTranslation(content string) string {
+func parseSRT(content string) (string, error) {
 	normalized := strings.ReplaceAll(content, "\r\n", "\n")
-	return strings.TrimSpace(sectionBody(normalized, "Translation:", ""))
+	normalized = strings.TrimSpace(stripCodeFence(normalized))
+	if normalized == "" {
+		return "", fmt.Errorf("empty content")
+	}
+
+	blocks := strings.Split(normalized, "\n\n")
+	cues := make([]string, 0, len(blocks))
+
+	for _, block := range blocks {
+		block = strings.TrimSpace(block)
+		if block == "" {
+			continue
+		}
+
+		lines := strings.Split(block, "\n")
+		if len(lines) < 3 {
+			return "", fmt.Errorf("invalid cue %q", block)
+		}
+
+		index, err := strconv.Atoi(strings.TrimSpace(lines[0]))
+		if err != nil {
+			return "", fmt.Errorf("invalid cue index %q", lines[0])
+		}
+		if index != len(cues)+1 {
+			return "", fmt.Errorf("unexpected cue index %d", index)
+		}
+
+		timestamp := strings.TrimSpace(lines[1])
+		if !srtTimestampPattern.MatchString(timestamp) {
+			return "", fmt.Errorf("invalid timestamp %q", timestamp)
+		}
+
+		textLines := make([]string, 0, len(lines)-2)
+		for _, line := range lines[2:] {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+			textLines = append(textLines, line)
+		}
+		if len(textLines) == 0 {
+			return "", fmt.Errorf("empty subtitle text for cue %d", index)
+		}
+
+		cues = append(cues, fmt.Sprintf("%d\n%s\n%s", index, timestamp, strings.Join(textLines, "\n")))
+	}
+
+	if len(cues) == 0 {
+		return "", fmt.Errorf("no subtitle cues found")
+	}
+
+	return strings.Join(cues, "\n\n") + "\n", nil
 }
 
-func sectionBody(content string, start string, end string) string {
-	startIdx := strings.Index(content, start)
-	if startIdx == -1 {
-		return ""
+func stripCodeFence(content string) string {
+	if !strings.HasPrefix(content, "```") {
+		return content
 	}
 
-	body := content[startIdx+len(start):]
-	if end != "" {
-		if endIdx := strings.Index(body, end); endIdx != -1 {
-			body = body[:endIdx]
-		}
+	lines := strings.Split(content, "\n")
+	if len(lines) < 2 {
+		return content
+	}
+	if strings.TrimSpace(lines[len(lines)-1]) != "```" {
+		return content
 	}
 
-	return body
+	return strings.Join(lines[1:len(lines)-1], "\n")
 }

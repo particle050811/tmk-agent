@@ -10,6 +10,7 @@ func TestLoad(t *testing.T) {
 	t.Setenv("DASHSCOPE_API_KEY", "test-key")
 	t.Setenv("QWEN_REALTIME_BASE_URL", "wss://example.com/realtime")
 	t.Setenv("QWEN_REALTIME_MODEL", "test-model")
+	t.Setenv("QWEN_TRANSCRIPT_MODEL", "test-transcript-model")
 	t.Setenv("TMK_SAMPLE_RATE", "24000")
 	t.Setenv("TMK_CHANNELS", "2")
 	t.Setenv("TMK_CHUNK_MILLIS", "100")
@@ -31,6 +32,9 @@ func TestLoad(t *testing.T) {
 	}
 	if cfg.Model != "test-model" {
 		t.Fatalf("Model = %q", cfg.Model)
+	}
+	if cfg.TranscriptModel != "test-transcript-model" {
+		t.Fatalf("TranscriptModel = %q", cfg.TranscriptModel)
 	}
 	if cfg.SampleRate != 24000 {
 		t.Fatalf("SampleRate = %d", cfg.SampleRate)
@@ -66,7 +70,7 @@ func TestLoadRequiresAPIKey(t *testing.T) {
 func TestLoadDotEnv(t *testing.T) {
 	dir := t.TempDir()
 	envFile := filepath.Join(dir, ".env")
-	if err := os.WriteFile(envFile, []byte("DASHSCOPE_API_KEY=from-dotenv\nQWEN_REALTIME_MODEL=qwen-custom\n"), 0o644); err != nil {
+	if err := os.WriteFile(envFile, []byte("DASHSCOPE_API_KEY=from-dotenv\nQWEN_REALTIME_MODEL=qwen-custom\nQWEN_TRANSCRIPT_MODEL=qwen-transcript\n"), 0o644); err != nil {
 		t.Fatalf("WriteFile() error = %v", err)
 	}
 
@@ -83,6 +87,7 @@ func TestLoadDotEnv(t *testing.T) {
 
 	_ = os.Unsetenv("DASHSCOPE_API_KEY")
 	_ = os.Unsetenv("QWEN_REALTIME_MODEL")
+	_ = os.Unsetenv("QWEN_TRANSCRIPT_MODEL")
 
 	cfg, err := Load()
 	if err != nil {
@@ -94,5 +99,8 @@ func TestLoadDotEnv(t *testing.T) {
 	}
 	if cfg.Model != "qwen-custom" {
 		t.Fatalf("Model = %q", cfg.Model)
+	}
+	if cfg.TranscriptModel != "qwen-transcript" {
+		t.Fatalf("TranscriptModel = %q", cfg.TranscriptModel)
 	}
 }

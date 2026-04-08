@@ -101,7 +101,7 @@ func runTranscript(args []string) error {
 	fs.SetOutput(os.Stderr)
 
 	filePath := fs.String("file", "", "input audio file")
-	output := fs.String("output", "", "output text file")
+	output := fs.String("output", "", "output .srt subtitle file")
 	sourceLang := fs.String("source-lang", "", "source language code")
 	targetLang := fs.String("target-lang", "", "target language code")
 
@@ -131,12 +131,11 @@ func runTranscript(args []string) error {
 		}
 	}
 
-	content := fmt.Sprintf("Source Language: %s\nTarget Language: %s\n\nTranslation:\n%s\n", *sourceLang, *targetLang, result.Translation)
-	if err := os.WriteFile(*output, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(*output, []byte(result.Subtitles), 0o644); err != nil {
 		return fmt.Errorf("write output file: %w", err)
 	}
 
-	fmt.Fprintf(os.Stdout, "transcript written to %s\n", *output)
+	fmt.Fprintf(os.Stdout, "srt subtitles written to %s\n", *output)
 	return nil
 }
 

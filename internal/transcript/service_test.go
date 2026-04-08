@@ -1,6 +1,9 @@
 package transcript
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestAudioFormat(t *testing.T) {
 	tests := []struct {
@@ -32,11 +35,43 @@ func TestCompatibleBaseURL(t *testing.T) {
 	}
 }
 
-func TestParseTranslation(t *testing.T) {
-	content := "Translation:\nHello, world"
+func TestParseSRT(t *testing.T) {
+	content := "```srt\n1\n00:00:00,000 --> 00:00:01,500\nHello, world\n\n2\n00:00:01,500 --> 00:00:03,000\nHow are you?\n```"
 
-	translation := parseTranslation(content)
-	if translation != "Hello, world" {
-		t.Fatalf("translation = %q", translation)
+	subtitles, err := parseSRT(content)
+	if err != nil {
+		t.Fatalf("parseSRT() error = %v", err)
 	}
+
+	want := "1\n00:00:00,000 --> 00:00:01,500\nHello, world\n\n2\n00:00:01,500 --> 00:00:03,000\nHow are you?\n"
+	if subtitles != want {
+		t.Fatalf("subtitles = %q, want %q", subtitles, want)
+	}
+}
+
+func TestParseSRTRejectsInvalidCueSequence(t *testing.T) {
+	content := "1\n00:00:00,000 --> 00:00:01,500\nHello\n\n3\n00:00:01,500 --> 00:00:03,000\nWorld"
+
+	if _, err := parseSRT(content); err == nil {
+		t.Fatal("parseSRT() error = nil, want error")
+	}
+}
+
+func TestBuildAPIErrorAccessDenied(t *testing.T) {
+	err := buildAPIError("403 Forbidden", []byte(`{"error":{"message":"Access denied","type":"access_denied","code":"access_denied"}}`), "qwen3.5-omni-plus")
+	if err == nil {
+		t.Fatal("buildAPIError() error = nil")
+	}
+	if got := err.Error(); got == "" || !containsAll(got, []string{"403 Forbidden", "qwen3.5-omni-plus", "access_denied"}) {
+		t.Fatalf("buildAPIError() = %q", got)
+	}
+}
+
+func containsAll(s string, parts []string) bool {
+	for _, part := range parts {
+		if !strings.Contains(s, part) {
+			return false
+		}
+	}
+	return true
 }

@@ -1,0 +1,119 @@
+1
+00:00:00,000 --> 00:00:02,500
+Copilot actually changed my PR into an advertisement.
+
+2
+00:00:02,500 --> 00:00:05,000
+This is a real complaint that hit the top of Hacker News.
+
+3
+00:00:05,000 --> 00:00:08,000
+A developer only asked Copilot to fix a spelling error in his PR.
+
+4
+00:00:08,000 --> 00:00:10,500
+But after the fix, the code was fine, yet the PR footer had an extra line.
+
+5
+00:00:10,500 --> 00:00:13,000
+It read "Third-party product advertisement" with a link attached.
+
+6
+00:00:13,000 --> 00:00:15,500
+Even more bizarrely, the product was a "official partner" of Copilot.
+
+7
+00:00:15,500 --> 00:00:18,000
+So far, it was just absurd, but something even more explosive followed.
+
+8
+00:00:18,000 --> 00:00:20,500
+Someone searched for the exact ad copy and found nearly identical content.
+
+9
+00:00:20,500 --> 00:00:23,000
+It had already appeared in over 11,000 GitHub PRs.
+
+10
+00:00:23,000 --> 00:00:25,500
+The combined commits involved over 1.5 million PRs.
+
+11
+00:00:25,500 --> 00:00:28,000
+Not only GitHub, but also GitLab PRs were not spared.
+
+12
+00:00:28,000 --> 00:00:30,500
+Public opinion exploded. The poster said bluntly:
+
+13
+00:00:30,500 --> 00:00:33,000
+"I knew this kind of mess would happen sooner or later, but I didn't expect it so soon."
+
+14
+00:00:33,000 --> 00:00:35,500
+Some joked: "Forcing ads in is Microsoft's old habit."
+
+15
+00:00:35,500 --> 00:00:38,000
+They've been testing user limits since the Windows era.
+
+16
+00:00:38,000 --> 00:00:40,500
+Some media worried: if PR content with ads is used to train Copilot,
+
+17
+00:00:40,500 --> 00:00:43,000
+won't AI start pushing ads more and more frequently?
+
+18
+00:00:43,000 --> 00:00:45,500
+In the face of public backlash, the official response was firm.
+
+19
+00:00:45,500 --> 00:00:48,000
+They insisted GitHub will never place ads on its platform.
+
+20
+00:00:48,000 --> 00:00:50,500
+It was all a misunderstanding — Copilot only generated content with product prompts.
+
+21
+00:00:50,500 --> 00:00:53,000
+The system mistakenly inserted a recommendation prompt into the PR.
+
+22
+00:00:53,000 --> 00:00:55,500
+It looked like an ad, but it was essentially a product operation error.
+
+23
+00:00:55,500 --> 00:00:58,000
+It sounds reasonable, but it's hard to fully reassure people.
+
+24
+00:00:58,000 --> 00:01:00,500
+Because if you look deeper, the logic behind this incident is very realistic.
+
+25
+00:01:00,500 --> 00:01:03,000
+Both Copilot and the entire AI industry are facing the same problem: where does the money come from?
+
+26
+00:01:03,000 --> 00:01:05,500
+When the freemium model hits its ceiling, advertising monetization is almost unavoidable.
+
+27
+00:01:05,500 --> 00:01:08,000
+But this time, it doesn't appear in web sidebars or pop-ups.
+
+28
+00:01:08,000 --> 00:01:10,500
+Instead, it's directly embedded into the most trusted generated content.
+
+29
+00:01:10,500 --> 00:01:13,000
+That's why people reacted so strongly.
+
+30
+00:01:13,000 --> 00:01:15,500
+When AI starts inserting ads into answers, can you still trust it unconditionally?

@@ -14,6 +14,7 @@ import (
 const (
 	defaultBaseURL                  = "wss://dashscope.aliyuncs.com/api-ws/v1/realtime"
 	defaultModel                    = "qwen3.5-omni-plus-realtime"
+	defaultTranscriptModel          = "qwen3-omni-flash"
 	defaultSampleRate        uint32 = 16000
 	defaultChannels          uint32 = 1
 	defaultChunkMillis              = 200
@@ -24,6 +25,7 @@ type Config struct {
 	APIKey            string
 	BaseURL           string
 	Model             string
+	TranscriptModel   string
 	SampleRate        uint32
 	Channels          uint32
 	ChunkMillis       int
@@ -52,6 +54,7 @@ func Load() (Config, error) {
 		APIKey:            os.Getenv("DASHSCOPE_API_KEY"),
 		BaseURL:           getenv("QWEN_REALTIME_BASE_URL", defaultBaseURL),
 		Model:             getenv("QWEN_REALTIME_MODEL", defaultModel),
+		TranscriptModel:   getenv("QWEN_TRANSCRIPT_MODEL", defaultTranscriptModel),
 		SampleRate:        getEnvUint32("TMK_SAMPLE_RATE", defaultSampleRate),
 		Channels:          getEnvUint32("TMK_CHANNELS", defaultChannels),
 		ChunkMillis:       getEnvInt("TMK_CHUNK_MILLIS", defaultChunkMillis),
