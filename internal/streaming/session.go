@@ -19,13 +19,15 @@ type Renderer interface {
 }
 
 type RunConfig struct {
-	Realtime    config.RealtimeConfig
-	AudioIn     <-chan []byte
-	Renderer    Renderer
-	ChunkMillis int
-	SampleRate  int
-	Channels    int
-	Debug       bool
+	Realtime          config.RealtimeConfig
+	AudioIn           <-chan []byte
+	Renderer          Renderer
+	ChunkMillis       int
+	SampleRate        int
+	Channels          int
+	Debug             bool
+	DebugAudioDir     string
+	DebugAudioSeconds int
 }
 
 func Run(ctx context.Context, cfg RunConfig) error {
@@ -66,6 +68,19 @@ func runConnected(ctx context.Context, cfg RunConfig) error {
 	if cfg.Debug {
 		cfg.Renderer.PrintStatus("waiting for microphone PCM")
 	}
+	var recorder *DebugAudioRecorder
+	if cfg.DebugAudioDir != "" {
+		recorder, err = NewDebugAudioRecorder(cfg.DebugAudioDir, cfg.SampleRate, cfg.Channels, cfg.DebugAudioSeconds)
+		if err != nil {
+			return fmt.Errorf("init debug audio recorder: %w", err)
+		}
+		defer func() {
+			if closeErr := recorder.Close(); closeErr != nil {
+				cfg.Renderer.PrintError(fmt.Errorf("close debug audio recorder: %w", closeErr))
+			}
+		}()
+		cfg.Renderer.PrintStatus(fmt.Sprintf("debug audio save enabled: %s (%ds per file)", cfg.DebugAudioDir, cfg.DebugAudioSeconds))
+	}
 	chunker := NewChunker(cfg.SampleRate, cfg.Channels, cfg.ChunkMillis)
 	lastEventAt := time.Now()
 	receivedPCM := false
@@ -94,6 +109,15 @@ func runConnected(ctx context.Context, cfg RunConfig) error {
 		case pcm, ok := <-cfg.AudioIn:
 			if !ok {
 				return errors.New("audio input stream closed")
+			}
+			if recorder != nil {
+				path, err := recorder.Write(pcm)
+				if err != nil {
+					return fmt.Errorf("write debug audio: %w", err)
+				}
+				if path != "" {
+					cfg.Renderer.PrintStatus("debug audio saved: " + path)
+				}
 			}
 			if cfg.Debug && !receivedPCM {
 				receivedPCM = true

@@ -14,6 +14,8 @@ func TestLoad(t *testing.T) {
 	t.Setenv("TMK_CHANNELS", "2")
 	t.Setenv("TMK_CHUNK_MILLIS", "100")
 	t.Setenv("TMK_DEBUG", "true")
+	t.Setenv("TMK_DEBUG_AUDIO_DIR", "/tmp/tmk-audio")
+	t.Setenv("TMK_DEBUG_AUDIO_SECONDS", "8")
 
 	cfg, err := Load()
 	if err != nil {
@@ -40,6 +42,12 @@ func TestLoad(t *testing.T) {
 	}
 	if !cfg.Debug {
 		t.Fatal("Debug = false, want true")
+	}
+	if cfg.DebugAudioDir != "/tmp/tmk-audio" {
+		t.Fatalf("DebugAudioDir = %q", cfg.DebugAudioDir)
+	}
+	if cfg.DebugAudioSeconds != 8 {
+		t.Fatalf("DebugAudioSeconds = %d", cfg.DebugAudioSeconds)
 	}
 }
 

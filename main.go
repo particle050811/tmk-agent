@@ -75,13 +75,15 @@ func runStream(args []string) error {
 	))
 
 	return streaming.Run(ctx, streaming.RunConfig{
-		Realtime:    cfg.RealtimeConfig(*sourceLang, *targetLang),
-		AudioIn:     audioIn,
-		Renderer:    renderer,
-		ChunkMillis: cfg.ChunkMillis,
-		SampleRate:  int(cfg.SampleRate),
-		Channels:    int(cfg.Channels),
-		Debug:       cfg.Debug,
+		Realtime:          cfg.RealtimeConfig(*sourceLang, *targetLang),
+		AudioIn:           audioIn,
+		Renderer:          renderer,
+		ChunkMillis:       cfg.ChunkMillis,
+		SampleRate:        int(cfg.SampleRate),
+		Channels:          int(cfg.Channels),
+		Debug:             cfg.Debug,
+		DebugAudioDir:     cfg.DebugAudioDir,
+		DebugAudioSeconds: cfg.DebugAudioSeconds,
 	})
 }
 

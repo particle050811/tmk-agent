@@ -29,6 +29,8 @@ type Config struct {
 	ChunkMillis       int
 	AudioBufferFrames int
 	Debug             bool
+	DebugAudioDir     string
+	DebugAudioSeconds int
 }
 
 type RealtimeConfig struct {
@@ -54,6 +56,8 @@ func Load() (Config, error) {
 		ChunkMillis:       getEnvInt("TMK_CHUNK_MILLIS", defaultChunkMillis),
 		AudioBufferFrames: getEnvInt("TMK_AUDIO_BUFFER_FRAMES", defaultAudioBufferFrames),
 		Debug:             getEnvBool("TMK_DEBUG", false),
+		DebugAudioDir:     strings.TrimSpace(os.Getenv("TMK_DEBUG_AUDIO_DIR")),
+		DebugAudioSeconds: getEnvInt("TMK_DEBUG_AUDIO_SECONDS", 15),
 	}
 
 	if cfg.APIKey == "" {
@@ -64,6 +68,9 @@ func Load() (Config, error) {
 	}
 	if cfg.AudioBufferFrames <= 0 {
 		return Config{}, errors.New("TMK_AUDIO_BUFFER_FRAMES must be > 0")
+	}
+	if cfg.DebugAudioDir != "" && cfg.DebugAudioSeconds <= 0 {
+		return Config{}, errors.New("TMK_DEBUG_AUDIO_SECONDS must be > 0 when TMK_DEBUG_AUDIO_DIR is set")
 	}
 
 	parsed, err := url.Parse(cfg.BaseURL)
