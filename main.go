@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"tmk-agent/internal/audio"
 	"tmk-agent/internal/config"
 	"tmk-agent/internal/render"
 	"tmk-agent/internal/streaming"
+	"tmk-agent/internal/transcript"
 )
 
 func main() {
@@ -89,16 +91,42 @@ func runTranscript(args []string) error {
 
 	filePath := fs.String("file", "", "input audio file")
 	output := fs.String("output", "", "output text file")
+	sourceLang := fs.String("source-lang", "", "source language code")
+	targetLang := fs.String("target-lang", "", "target language code")
 
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 
-	if *filePath == "" || *output == "" {
-		return errors.New("transcript requires --file and --output")
+	if *filePath == "" || *output == "" || *sourceLang == "" || *targetLang == "" {
+		return errors.New("transcript requires --file, --output, --source-lang, and --target-lang")
 	}
 
-	return errors.New("transcript mode is not implemented yet")
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+
+	svc := transcript.New(cfg)
+	result, err := svc.TranscribeFile(*filePath, *sourceLang, *targetLang)
+	if err != nil {
+		return err
+	}
+
+	outputDir := filepath.Dir(*output)
+	if outputDir != "." {
+		if err := os.MkdirAll(outputDir, 0o755); err != nil {
+			return fmt.Errorf("create output directory: %w", err)
+		}
+	}
+
+	content := fmt.Sprintf("Source Language: %s\nTarget Language: %s\n\nTranslation:\n%s\n", *sourceLang, *targetLang, result.Translation)
+	if err := os.WriteFile(*output, []byte(content), 0o644); err != nil {
+		return fmt.Errorf("write output file: %w", err)
+	}
+
+	fmt.Fprintf(os.Stdout, "transcript written to %s\n", *output)
+	return nil
 }
 
 func usageError() error {

@@ -1,0 +1,4 @@
+Translate the spoken content from {{source_lang}} into {{target_lang}}.
+Return plain text only using exactly this format:
+Translation:
+<target text>
