@@ -7,11 +7,14 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/coder/websocket"
 
 	"tmk-agent/internal/config"
 )
+
+const ioTimeout = 5 * time.Second
 
 type Client struct {
 	conn *websocket.Conn
@@ -25,7 +28,10 @@ type Client struct {
 }
 
 func Dial(ctx context.Context, cfg config.RealtimeConfig) (*Client, error) {
-	conn, _, err := websocket.Dial(ctx, cfg.URL, &websocket.DialOptions{
+	dialCtx, cancel := context.WithTimeout(ctx, ioTimeout)
+	defer cancel()
+
+	conn, _, err := websocket.Dial(dialCtx, cfg.URL, &websocket.DialOptions{
 		HTTPHeader: http.Header{
 			"Authorization":              []string{"Bearer " + cfg.APIKey},
 			"X-DashScope-DataInspection": []string{"disable"},
@@ -94,7 +100,11 @@ func (c *Client) writeJSON(ctx context.Context, v any) error {
 	if err != nil {
 		return fmt.Errorf("marshal realtime event: %w", err)
 	}
-	if err := c.conn.Write(ctx, websocket.MessageText, data); err != nil {
+
+	writeCtx, cancel := context.WithTimeout(ctx, ioTimeout)
+	defer cancel()
+
+	if err := c.conn.Write(writeCtx, websocket.MessageText, data); err != nil {
 		return fmt.Errorf("write realtime event: %w", err)
 	}
 	return nil
@@ -105,7 +115,9 @@ func (c *Client) readLoop(ctx context.Context) {
 	defer close(c.errs)
 
 	for {
-		_, data, err := c.conn.Read(ctx)
+		readCtx, cancel := context.WithTimeout(ctx, ioTimeout)
+		_, data, err := c.conn.Read(readCtx)
+		cancel()
 		if err != nil {
 			if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
 				return
