@@ -13,6 +13,7 @@ import (
 
 	"tmk-agent/internal/audio"
 	"tmk-agent/internal/config"
+	"tmk-agent/internal/langs"
 	"tmk-agent/internal/render"
 	"tmk-agent/internal/streaming"
 	"tmk-agent/internal/transcript"
@@ -51,6 +52,15 @@ func runStream(args []string) error {
 		return err
 	}
 
+	normalizedSource, err := langs.Normalize(*sourceLang)
+	if err != nil {
+		return fmt.Errorf("invalid --source-lang: %w", err)
+	}
+	normalizedTarget, err := langs.Normalize(*targetLang)
+	if err != nil {
+		return fmt.Errorf("invalid --target-lang: %w", err)
+	}
+
 	cfg, err := config.Load()
 	if err != nil {
 		return err
@@ -70,8 +80,8 @@ func runStream(args []string) error {
 
 	renderer.PrintStatus(fmt.Sprintf(
 		"streaming from %s to %s with model %s",
-		*sourceLang,
-		*targetLang,
+		langs.DisplayName(normalizedSource),
+		langs.DisplayName(normalizedTarget),
 		cfg.Model,
 	))
 	renderer.PrintStatus(fmt.Sprintf(
@@ -84,7 +94,7 @@ func runStream(args []string) error {
 	}
 
 	return streaming.Run(ctx, streaming.RunConfig{
-		Realtime:          cfg.RealtimeConfig(*sourceLang, *targetLang),
+		Realtime:          cfg.RealtimeConfig(normalizedSource, normalizedTarget),
 		AudioIn:           audioIn,
 		Renderer:          renderer,
 		ChunkMillis:       cfg.ChunkMillis,
@@ -113,13 +123,22 @@ func runTranscript(args []string) error {
 		return errors.New("transcript requires --file, --output, --source-lang, and --target-lang")
 	}
 
+	normalizedSource, err := langs.Normalize(*sourceLang)
+	if err != nil {
+		return fmt.Errorf("invalid --source-lang: %w", err)
+	}
+	normalizedTarget, err := langs.Normalize(*targetLang)
+	if err != nil {
+		return fmt.Errorf("invalid --target-lang: %w", err)
+	}
+
 	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}
 
 	svc := transcript.New(cfg)
-	result, err := svc.TranscribeFile(*filePath, *sourceLang, *targetLang)
+	result, err := svc.TranscribeFile(*filePath, normalizedSource, normalizedTarget)
 	if err != nil {
 		return err
 	}

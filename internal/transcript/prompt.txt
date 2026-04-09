@@ -1,8 +1,7 @@
-Transcribe the spoken content from {{source_lang}} and translate it into {{target_lang}}.
-Return only valid SubRip subtitle content (.srt).
-Rules:
-1. Output plain text only. Do not use Markdown code fences.
-2. Use sequential cue numbers starting from 1.
-3. Use timestamps in HH:MM:SS,mmm --> HH:MM:SS,mmm format.
-4. Each subtitle cue must contain translated text in {{target_lang}} only.
-5. Do not add headings, notes, or explanations before or after the subtitle content.
+请将音频中的{{source_lang}}口语内容转写并翻译成{{target_lang}}，只返回合法的 SubRip 字幕内容（`.srt`）。
+规则：
+1. 只输出纯文本，不要使用 Markdown 代码块。
+2. 字幕序号必须从 1 开始连续递增。
+3. 时间戳格式必须为 `HH:MM:SS,mmm --> HH:MM:SS,mmm`。
+4. 每条字幕只包含{{target_lang}}译文，不要混入原文。
+5. 不要在字幕内容前后添加标题、说明、备注或解释。

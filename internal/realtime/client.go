@@ -2,10 +2,12 @@ package realtime
 
 import (
 	"context"
+	_ "embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,6 +17,9 @@ import (
 )
 
 const ioTimeout = 5 * time.Second
+
+//go:embed prompt.txt
+var realtimePromptTemplate string
 
 type Client struct {
 	conn *websocket.Conn
@@ -148,11 +153,10 @@ func (c *Client) readLoop(ctx context.Context) {
 }
 
 func buildInstructions(sourceLang, targetLang string) string {
-	return fmt.Sprintf(
-		"Listen to the user's spoken %s input, transcribe it accurately, and respond only with the translated %s text. Keep punctuation natural and do not add commentary.",
-		sourceLang,
-		targetLang,
-	)
+	prompt := realtimePromptTemplate
+	prompt = strings.ReplaceAll(prompt, "{{source_lang}}", sourceLang)
+	prompt = strings.ReplaceAll(prompt, "{{target_lang}}", targetLang)
+	return prompt
 }
 
 func parseEvent(data []byte) (Event, error) {

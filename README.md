@@ -73,6 +73,7 @@ go run . stream --source-lang en --target-lang zh
 
 - `--source-lang` 默认值是 `zh`
 - `--target-lang` 默认值是 `en`
+- 当前只支持 4 种语言：`zh`、`en`、`es`、`ja`
 - 启动后会使用麦克风采集音频
 
 ## 4. 音频文件转字幕
@@ -105,6 +106,7 @@ go run . transcript --file ./test/test.wav --output ./out/test.srt --source-lang
 - `--output` 必填
 - `--source-lang` 必填
 - `--target-lang` 必填
+- 当前只支持 4 种语言：`zh`、`en`、`es`、`ja`
 - 支持的音频格式见当前实现，常用可按 `mp3`、`wav` 理解
 
 ## 5. 常用环境变量
