@@ -28,6 +28,7 @@ type RunConfig struct {
 	Debug             bool
 	DebugAudioDir     string
 	DebugAudioSeconds int
+	OutputAudioDir    string
 }
 
 func Run(ctx context.Context, cfg RunConfig) error {
@@ -69,6 +70,7 @@ func runConnected(ctx context.Context, cfg RunConfig) error {
 		cfg.Renderer.PrintStatus("waiting for microphone PCM")
 	}
 	var recorder *DebugAudioRecorder
+	var outputRecorder *OutputAudioRecorder
 	if cfg.DebugAudioDir != "" {
 		recorder, err = NewDebugAudioRecorder(cfg.DebugAudioDir, cfg.SampleRate, cfg.Channels, cfg.DebugAudioSeconds)
 		if err != nil {
@@ -80,6 +82,13 @@ func runConnected(ctx context.Context, cfg RunConfig) error {
 			}
 		}()
 		cfg.Renderer.PrintStatus(fmt.Sprintf("debug audio save enabled: %s (%ds per file)", cfg.DebugAudioDir, cfg.DebugAudioSeconds))
+	}
+	if cfg.OutputAudioDir != "" {
+		outputRecorder, err = NewOutputAudioRecorder(cfg.OutputAudioDir, 1)
+		if err != nil {
+			return fmt.Errorf("init output audio recorder: %w", err)
+		}
+		cfg.Renderer.PrintStatus(fmt.Sprintf("target audio save enabled: %s (voice=%s)", cfg.OutputAudioDir, cfg.Realtime.OutputVoice))
 	}
 	chunker := NewChunker(cfg.SampleRate, cfg.Channels, cfg.ChunkMillis)
 	lastEventAt := time.Now()
@@ -106,6 +115,20 @@ func runConnected(ctx context.Context, cfg RunConfig) error {
 			lastEventAt = time.Now()
 			if cfg.Debug {
 				cfg.Renderer.PrintStatus("received event: " + event.Type)
+			}
+			if outputRecorder != nil {
+				switch event.Type {
+				case "response.audio.delta":
+					outputRecorder.Append(event.Audio)
+				case "response.audio.done":
+					path, err := outputRecorder.Flush(event.ResponseID)
+					if err != nil {
+						return fmt.Errorf("write target audio: %w", err)
+					}
+					if path != "" {
+						cfg.Renderer.PrintStatus("target audio saved: " + path)
+					}
+				}
 			}
 			handleEvent(cfg.Renderer, event)
 		case pcm, ok := <-cfg.AudioIn:
@@ -178,7 +201,15 @@ func handleEvent(renderer Renderer, event realtime.Event) {
 		if event.Delta != "" {
 			renderer.PrintTargetDelta(event.Delta)
 		}
+	case "response.audio_transcript.delta":
+		if event.Delta != "" {
+			renderer.PrintTargetDelta(event.Delta)
+		}
 	case "response.text.done":
+		if event.Text != "" {
+			renderer.PrintTargetFinal(event.Text)
+		}
+	case "response.audio_transcript.done":
 		if event.Text != "" {
 			renderer.PrintTargetFinal(event.Text)
 		}

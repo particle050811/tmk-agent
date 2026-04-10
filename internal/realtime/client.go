@@ -67,20 +67,28 @@ func (c *Client) Errs() <-chan error {
 }
 
 func (c *Client) SendSessionUpdate(ctx context.Context, cfg config.RealtimeConfig) error {
-	return c.writeJSON(ctx, SessionUpdateEvent{
-		Type: "session.update",
-		Session: SessionPayload{
-			Modalities:       []string{"text"},
-			InputAudioFormat: "pcm",
-			TurnDetection: &TurnDetection{
-				Type:            "server_vad",
-				Threshold:       0.5,
-				PrefixPadding:   300,
-				SilenceDuration: 500,
-				CreateResponse:  true,
-			},
-			Instructions: buildInstructions(cfg.SourceLang, cfg.TargetLang),
+	modalities := []string{"text"}
+	session := SessionPayload{
+		Modalities:       modalities,
+		InputAudioFormat: "pcm",
+		TurnDetection: &TurnDetection{
+			Type:            "server_vad",
+			Threshold:       0.5,
+			PrefixPadding:   300,
+			SilenceDuration: 500,
+			CreateResponse:  true,
 		},
+		Instructions: buildInstructions(cfg.SourceLang, cfg.TargetLang),
+	}
+	if cfg.OutputAudio {
+		session.Modalities = []string{"text", "audio"}
+		session.OutputAudioFormat = "pcm"
+		session.Voice = cfg.OutputVoice
+	}
+
+	return c.writeJSON(ctx, SessionUpdateEvent{
+		Type:    "session.update",
+		Session: session,
 	})
 }
 
@@ -120,9 +128,7 @@ func (c *Client) readLoop(ctx context.Context) {
 	defer close(c.errs)
 
 	for {
-		readCtx, cancel := context.WithTimeout(ctx, ioTimeout)
-		_, data, err := c.conn.Read(readCtx)
-		cancel()
+		_, data, err := c.conn.Read(ctx)
 		if err != nil {
 			if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
 				return
@@ -193,6 +199,48 @@ func parseEvent(data []byte) (Event, error) {
 		}
 		event.ResponseID = payload.ResponseID
 		event.Text = payload.Text
+	case "response.audio_transcript.delta":
+		var payload struct {
+			ResponseID string `json:"response_id"`
+			Delta      string `json:"delta"`
+		}
+		if err := json.Unmarshal(data, &payload); err != nil {
+			return Event{}, err
+		}
+		event.ResponseID = payload.ResponseID
+		event.Delta = payload.Delta
+	case "response.audio_transcript.done":
+		var payload struct {
+			ResponseID string `json:"response_id"`
+			Transcript string `json:"transcript"`
+		}
+		if err := json.Unmarshal(data, &payload); err != nil {
+			return Event{}, err
+		}
+		event.ResponseID = payload.ResponseID
+		event.Text = payload.Transcript
+	case "response.audio.delta":
+		var payload struct {
+			ResponseID string `json:"response_id"`
+			Delta      string `json:"delta"`
+		}
+		if err := json.Unmarshal(data, &payload); err != nil {
+			return Event{}, err
+		}
+		audio, err := base64.StdEncoding.DecodeString(payload.Delta)
+		if err != nil {
+			return Event{}, fmt.Errorf("decode response audio delta: %w", err)
+		}
+		event.ResponseID = payload.ResponseID
+		event.Audio = audio
+	case "response.audio.done":
+		var payload struct {
+			ResponseID string `json:"response_id"`
+		}
+		if err := json.Unmarshal(data, &payload); err != nil {
+			return Event{}, err
+		}
+		event.ResponseID = payload.ResponseID
 	case "error":
 		var payload struct {
 			Error struct {

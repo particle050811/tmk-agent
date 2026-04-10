@@ -18,6 +18,26 @@ func TestParseEvent(t *testing.T) {
 			in:   `{"type":"response.text.done","response_id":"resp-1","text":"hello world"}`,
 			want: Event{Type: "response.text.done", ResponseID: "resp-1", Text: "hello world"},
 		},
+		{
+			name: "response audio transcript delta",
+			in:   `{"type":"response.audio_transcript.delta","response_id":"resp-1","delta":"hello"}`,
+			want: Event{Type: "response.audio_transcript.delta", ResponseID: "resp-1", Delta: "hello"},
+		},
+		{
+			name: "response audio transcript done",
+			in:   `{"type":"response.audio_transcript.done","response_id":"resp-1","transcript":"hello world"}`,
+			want: Event{Type: "response.audio_transcript.done", ResponseID: "resp-1", Text: "hello world"},
+		},
+		{
+			name: "response audio delta",
+			in:   `{"type":"response.audio.delta","response_id":"resp-1","delta":"aGVsbG8="}`,
+			want: Event{Type: "response.audio.delta", ResponseID: "resp-1", Audio: []byte("hello")},
+		},
+		{
+			name: "response audio done",
+			in:   `{"type":"response.audio.done","response_id":"resp-1"}`,
+			want: Event{Type: "response.audio.done", ResponseID: "resp-1"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -27,7 +47,7 @@ func TestParseEvent(t *testing.T) {
 				t.Fatalf("parseEvent() error = %v", err)
 			}
 
-			if got.Type != tt.want.Type || got.ID != tt.want.ID || got.Text != tt.want.Text || got.Delta != tt.want.Delta || got.ResponseID != tt.want.ResponseID {
+			if got.Type != tt.want.Type || got.ID != tt.want.ID || got.Text != tt.want.Text || got.Delta != tt.want.Delta || got.ResponseID != tt.want.ResponseID || string(got.Audio) != string(tt.want.Audio) {
 				t.Fatalf("parseEvent() = %#v, want %#v", got, tt.want)
 			}
 		})
