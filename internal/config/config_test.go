@@ -18,6 +18,8 @@ func TestLoad(t *testing.T) {
 	t.Setenv("TMK_DEBUG", "true")
 	t.Setenv("TMK_DEBUG_AUDIO_DIR", "/tmp/tmk-audio")
 	t.Setenv("TMK_DEBUG_AUDIO_SECONDS", "8")
+	t.Setenv("TMK_OUTPUT_AUDIO_DIR", "/tmp/tmk-output")
+	t.Setenv("TMK_OUTPUT_VOICE", "Jennifer")
 
 	cfg, err := Load()
 	if err != nil {
@@ -56,6 +58,30 @@ func TestLoad(t *testing.T) {
 	}
 	if cfg.DebugAudioSeconds != 8 {
 		t.Fatalf("DebugAudioSeconds = %d", cfg.DebugAudioSeconds)
+	}
+	if cfg.OutputAudioDir != "/tmp/tmk-output" {
+		t.Fatalf("OutputAudioDir = %q", cfg.OutputAudioDir)
+	}
+	if cfg.OutputVoice != "Jennifer" {
+		t.Fatalf("OutputVoice = %q", cfg.OutputVoice)
+	}
+}
+
+func TestLoadDefaultsOutputAudioDir(t *testing.T) {
+	t.Setenv("DASHSCOPE_API_KEY", "test-key")
+	_ = os.Unsetenv("TMK_OUTPUT_AUDIO_DIR")
+	_ = os.Unsetenv("TMK_OUTPUT_VOICE")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	if cfg.OutputAudioDir != "./tmp/output-audio" {
+		t.Fatalf("OutputAudioDir = %q", cfg.OutputAudioDir)
+	}
+	if cfg.OutputVoice != "Cherry" {
+		t.Fatalf("OutputVoice = %q", cfg.OutputVoice)
 	}
 }
 

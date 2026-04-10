@@ -103,6 +103,7 @@ func runStream(args []string) error {
 		Debug:             cfg.Debug,
 		DebugAudioDir:     cfg.DebugAudioDir,
 		DebugAudioSeconds: cfg.DebugAudioSeconds,
+		OutputAudioDir:    cfg.OutputAudioDir,
 	})
 }
 

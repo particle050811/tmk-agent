@@ -15,6 +15,8 @@ const (
 	defaultBaseURL                  = "wss://dashscope.aliyuncs.com/api-ws/v1/realtime"
 	defaultModel                    = "qwen3.5-omni-plus-realtime"
 	defaultTranscriptModel          = "qwen3-omni-flash"
+	defaultOutputAudioDir           = "./tmp/output-audio"
+	defaultRealtimeVoice            = "Cherry"
 	defaultSampleRate        uint32 = 16000
 	defaultChannels          uint32 = 1
 	defaultChunkMillis              = 200
@@ -34,6 +36,8 @@ type Config struct {
 	Debug             bool
 	DebugAudioDir     string
 	DebugAudioSeconds int
+	OutputAudioDir    string
+	OutputVoice       string
 }
 
 type RealtimeConfig struct {
@@ -45,6 +49,8 @@ type RealtimeConfig struct {
 	SampleRate  uint32
 	Channels    uint32
 	ChunkMillis int
+	OutputAudio bool
+	OutputVoice string
 }
 
 func Load() (Config, error) {
@@ -63,6 +69,8 @@ func Load() (Config, error) {
 		Debug:             getEnvBool("TMK_DEBUG", false),
 		DebugAudioDir:     strings.TrimSpace(os.Getenv("TMK_DEBUG_AUDIO_DIR")),
 		DebugAudioSeconds: getEnvInt("TMK_DEBUG_AUDIO_SECONDS", 15),
+		OutputAudioDir:    getenv("TMK_OUTPUT_AUDIO_DIR", defaultOutputAudioDir),
+		OutputVoice:       getenv("TMK_OUTPUT_VOICE", defaultRealtimeVoice),
 	}
 
 	if cfg.APIKey == "" {
@@ -139,6 +147,8 @@ func (c Config) RealtimeConfig(sourceLang, targetLang string) RealtimeConfig {
 		SampleRate:  c.SampleRate,
 		Channels:    c.Channels,
 		ChunkMillis: c.ChunkMillis,
+		OutputAudio: c.OutputAudioDir != "",
+		OutputVoice: c.OutputVoice,
 	}
 }
 

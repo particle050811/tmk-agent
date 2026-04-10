@@ -125,6 +125,8 @@ TMK_AUDIO_DEVICE=
 TMK_DEBUG=false
 TMK_DEBUG_AUDIO_DIR=./tmp/debug-audio
 TMK_DEBUG_AUDIO_SECONDS=15
+TMK_OUTPUT_AUDIO_DIR=./tmp/output-audio
+TMK_OUTPUT_VOICE=Cherry
 ```
 
 其中：
@@ -132,3 +134,5 @@ TMK_DEBUG_AUDIO_SECONDS=15
 - `TMK_AUDIO_DEVICE` 可按设备名部分匹配来指定录音设备
 - `TMK_DEBUG=true` 可打开调试输出
 - `TMK_DEBUG_AUDIO_DIR` 配置后会输出调试音频文件
+- `TMK_OUTPUT_AUDIO_DIR` 默认会保存模型返回的目标语音 `.wav` 文件，不走扬声器播放
+- `TMK_OUTPUT_VOICE` 可指定 realtime 语音音色，默认 `Cherry`

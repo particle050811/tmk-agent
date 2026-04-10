@@ -8,10 +8,12 @@ type SessionUpdateEvent struct {
 }
 
 type SessionPayload struct {
-	Modalities       []string       `json:"modalities,omitempty"`
-	Instructions     string         `json:"instructions,omitempty"`
-	InputAudioFormat string         `json:"input_audio_format,omitempty"`
-	TurnDetection    *TurnDetection `json:"turn_detection,omitempty"`
+	Modalities        []string       `json:"modalities,omitempty"`
+	Instructions      string         `json:"instructions,omitempty"`
+	InputAudioFormat  string         `json:"input_audio_format,omitempty"`
+	OutputAudioFormat string         `json:"output_audio_format,omitempty"`
+	Voice             string         `json:"voice,omitempty"`
+	TurnDetection     *TurnDetection `json:"turn_detection,omitempty"`
 }
 
 type TurnDetection struct {
@@ -39,6 +41,7 @@ type Event struct {
 	Delta      string
 	ResponseID string
 	Error      string
+	Audio      []byte
 	Arguments  json.RawMessage
 	Raw        []byte
 }
