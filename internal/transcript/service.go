@@ -65,6 +65,10 @@ func (s *Service) TranscribeFile(path string, sourceLang string, targetLang stri
 		"model": s.model,
 		"messages": []map[string]any{
 			{
+				"role":    "system",
+				"content": buildPrompt(sourceLang, targetLang),
+			},
+			{
 				"role": "user",
 				"content": []map[string]any{
 					{
@@ -73,10 +77,6 @@ func (s *Service) TranscribeFile(path string, sourceLang string, targetLang stri
 							"data":   "data:;base64," + base64.StdEncoding.EncodeToString(data),
 							"format": format,
 						},
-					},
-					{
-						"type": "text",
-						"text": buildPrompt(sourceLang, targetLang),
 					},
 				},
 			},

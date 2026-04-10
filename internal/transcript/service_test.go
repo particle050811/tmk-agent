@@ -1,6 +1,8 @@
 package transcript
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -64,6 +66,79 @@ func TestBuildAPIErrorAccessDenied(t *testing.T) {
 	}
 	if got := err.Error(); got == "" || !containsAll(got, []string{"403 Forbidden", "qwen3.5-omni-plus", "access_denied"}) {
 		t.Fatalf("buildAPIError() = %q", got)
+	}
+}
+
+func TestTranscriptRequestSeparatesSystemPromptFromUserAudio(t *testing.T) {
+	prompt := buildPrompt("中文", "English")
+	payload := map[string]any{
+		"model": "test-model",
+		"messages": []map[string]any{
+			{
+				"role":    "system",
+				"content": prompt,
+			},
+			{
+				"role": "user",
+				"content": []map[string]any{
+					{
+						"type": "input_audio",
+						"input_audio": map[string]any{
+							"data":   "data:;base64," + base64.StdEncoding.EncodeToString([]byte("audio")),
+							"format": "mp3",
+						},
+					},
+				},
+			},
+		},
+		"modalities": []string{"text"},
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("json.Marshal() error = %v", err)
+	}
+
+	var decoded struct {
+		Messages []struct {
+			Role    string `json:"role"`
+			Content any    `json:"content"`
+		} `json:"messages"`
+	}
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v", err)
+	}
+
+	if len(decoded.Messages) != 2 {
+		t.Fatalf("messages count = %d, want 2", len(decoded.Messages))
+	}
+	if decoded.Messages[0].Role != "system" {
+		t.Fatalf("first message role = %q, want system", decoded.Messages[0].Role)
+	}
+	if decoded.Messages[0].Content != prompt {
+		t.Fatalf("system content = %v, want %q", decoded.Messages[0].Content, prompt)
+	}
+	if decoded.Messages[1].Role != "user" {
+		t.Fatalf("second message role = %q, want user", decoded.Messages[1].Role)
+	}
+
+	userContent, ok := decoded.Messages[1].Content.([]any)
+	if !ok {
+		t.Fatalf("user content type = %T, want []any", decoded.Messages[1].Content)
+	}
+	if len(userContent) != 1 {
+		t.Fatalf("user content length = %d, want 1", len(userContent))
+	}
+
+	audioPart, ok := userContent[0].(map[string]any)
+	if !ok {
+		t.Fatalf("user content part type = %T, want map[string]any", userContent[0])
+	}
+	if audioPart["type"] != "input_audio" {
+		t.Fatalf("user content part type field = %v, want input_audio", audioPart["type"])
+	}
+	if _, exists := audioPart["text"]; exists {
+		t.Fatal("user content unexpectedly contains prompt text")
 	}
 }
 
